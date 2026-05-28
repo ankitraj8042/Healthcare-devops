@@ -67,6 +67,11 @@ Appointments
 5. Click "Mark as Completed" and verify status changes.
 6. Refresh the page to confirm data persists.
 
+## Docker
+1. Build and start everything: `docker compose up --build`
+2. Frontend: http://localhost:3000
+3. Backend: http://localhost:5000
+
 ## Notes
 - Appointment logic is intentionally simple (no scheduling rules).
 - Use a local MongoDB instance or MongoDB Atlas.
