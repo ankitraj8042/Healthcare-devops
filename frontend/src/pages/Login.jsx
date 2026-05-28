@@ -91,7 +91,7 @@ function Login() {
         {error ? <p className="auth-message error">{error}</p> : null}
         {success ? <p className="auth-message success">{success}</p> : null}
         <p className="auth-hint">
-          We only use your email for appointment updates.
+          We only use your email for appointment updates and reminders.
         </p>
         <p className="auth-footer">
           Don't have an account? <Link to="/signup">Sign up</Link>
