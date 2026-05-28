@@ -35,6 +35,55 @@
   color: #166534;
 }
 
+.status-message.error {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.appointment-form-card {
+  margin: 24px 0 32px;
+}
+
+.appointment-form-card h2 {
+  font-size: 1.2rem;
+  color: #374151;
+  margin-bottom: 16px;
+}
+
+.appointment-form {
+  display: grid;
+  gap: 16px;
+}
+
+.form-field label {
+  display: block;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #374151;
+  margin-bottom: 6px;
+}
+
+.form-field input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 0.95rem;
+  color: #1f2937;
+  background: #f9fafb;
+}
+
+.form-field input:focus {
+  outline: none;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.15);
+}
+
+.appointment-form-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
 .appointments-section h2 {
   font-size: 1.2rem;
   color: #374151;

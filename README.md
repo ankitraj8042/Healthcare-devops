@@ -1,28 +1,30 @@
 # Healthcare DevOps
 
 ## Overview
-Healthcare appointment booking prototype with a working authentication flow and a React UI.
+Simple healthcare appointment booking app with authentication and basic
+appointment management.
 
-## Current status
-- Auth API is complete (signup/login with JWT).
-- Frontend flows exist for home, login, signup, and dashboard.
-- Dashboard uses mock appointment data (no appointments API yet).
-- No CI/CD, Docker, or deployment configuration yet.
+## Features
+- User signup and login with JWT.
+- Create appointments (patient, doctor, date).
+- View all appointments.
+- Update appointment status to completed.
+- Basic dashboard UI.
 
 ## Tech stack
 - Backend: Node.js, Express, MongoDB (Mongoose), JWT, bcrypt.
 - Frontend: React + Vite, React Router, ESLint.
 
 ## Project structure
-- backend/ contains the Express API and auth routes.
+- backend/ contains the Express API.
 - frontend/ contains the React app.
 
-## Getting started
+## Setup
 
 ### Backend
 1. cd backend
 2. npm install
-3. (Optional) create a .env file with the variables below
+3. Copy .env.example to .env and update values
 4. npm run dev
 
 ### Frontend
@@ -34,23 +36,32 @@ Healthcare appointment booking prototype with a working authentication flow and 
 
 Backend (.env)
 - PORT (default: 5000)
-- MONGO_URI (default: mongodb://localhost:27017/healthcare_auth)
-- JWT_SECRET (default: dev_secret)
+- MONGO_URI (MongoDB connection string)
+- JWT_SECRET (random secret string)
 - CORS_ORIGIN (default: http://localhost:5173)
 
 Frontend (.env)
 - VITE_API_URL (default: http://localhost:5000)
 
 ## API endpoints
+
+Auth
 - POST /api/auth/signup
 - POST /api/auth/login
 
-## Frontend routes
-- /
-- /login
-- /signup
-- /dashboard
+Appointments
+- POST /api/appointments
+- GET /api/appointments
+- PUT /api/appointments/:id (body: { "status": "completed" })
+
+## Manual testing
+1. Start backend and frontend.
+2. Sign up and log in.
+3. Create an appointment.
+4. Verify the appointment appears in the list.
+5. Click "Mark as Completed" and verify status changes.
+6. Refresh the page to confirm data persists.
 
 ## Notes
-- Dashboard currently uses mock data and only checks for a token in localStorage.
-- Replace mock data with real appointments APIs when available.
+- Appointment logic is intentionally simple (no scheduling rules).
+- Use a local MongoDB instance or MongoDB Atlas.

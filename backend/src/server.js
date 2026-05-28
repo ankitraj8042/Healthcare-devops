@@ -4,6 +4,7 @@ const cors = require("cors");
 require("dotenv").config();
 
 const authRoutes = require("./routes/auth");
+const appointmentRoutes = require("./routes/appointments");
 
 const app = express();
 app.use(express.json());
@@ -12,6 +13,7 @@ const corsOrigin = process.env.CORS_ORIGIN || "http://localhost:5173";
 app.use(cors({ origin: corsOrigin }));
 
 app.use("/api/auth", authRoutes);
+app.use("/api/appointments", appointmentRoutes);
 
 const PORT = process.env.PORT || 5000;
 const MONGO_URI =

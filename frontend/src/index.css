@@ -91,6 +91,11 @@ ul {
   color: #991b1b;
 }
 
+.badge-completed {
+  background-color: #dcfce7;
+  color: #166534;
+}
+
 /* ===== Loading Placeholder ===== */
 .skeleton {
   background: linear-gradient(90deg, #e5e7eb 25%, #f3f4f6 50%, #e5e7eb 75%);
