@@ -2,7 +2,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 12px;
+  gap: 16px;
 }
 
 .doctor-name {
@@ -17,10 +17,27 @@
   color: #6b7280;
 }
 
+.appointment-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.btn-compact {
+  padding: 6px 12px;
+  font-size: 0.85rem;
+}
+
 @media (max-width: 500px) {
   .appointment-card {
     flex-direction: column;
     align-items: flex-start;
     gap: 8px;
+  }
+
+  .appointment-actions {
+    width: 100%;
+    justify-content: flex-start;
   }
 }

@@ -1,16 +1,32 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import AppointmentCard from '../components/AppointmentCard';
 import LoadingPlaceholder from '../components/LoadingPlaceholder';
+import {
+  createAppointment,
+  getAppointments,
+  updateAppointmentStatus
+} from '../api';
 import './Dashboard.css';
 
-// Dummy data — replace with API call when backend is ready
-const DUMMY_APPOINTMENTS = [
-  { id: 1, doctor: 'Sarah Johnson', date: '2026-06-02, 10:00 AM', status: 'confirmed' },
-  { id: 2, doctor: 'Michael Chen', date: '2026-06-05, 02:30 PM', status: 'pending' },
-  { id: 3, doctor: 'Emily Davis', date: '2026-05-20, 09:00 AM', status: 'cancelled' },
-  { id: 4, doctor: 'Raj Patel', date: '2026-06-10, 11:15 AM', status: 'confirmed' },
-];
+const initialFormState = {
+  patientName: '',
+  doctorName: '',
+  date: ''
+};
+
+const formatDate = (value) => {
+  if (!value) {
+    return '';
+  }
+
+  const parsedDate = new Date(value);
+  if (Number.isNaN(parsedDate.getTime())) {
+    return value;
+  }
+
+  return parsedDate.toLocaleDateString();
+};
 
 function Dashboard() {
   const token = localStorage.getItem('token');
@@ -18,26 +34,92 @@ function Dashboard() {
   const navigate = useNavigate();
   const [appointments, setAppointments] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [formData, setFormData] = useState(initialFormState);
+  const [error, setError] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [updatingId, setUpdatingId] = useState(null);
 
   if (!token) {
     return <Navigate to="/login" replace />;
   }
 
-  useEffect(() => {
-    // Simulate API call with a short delay
-    const timer = setTimeout(() => {
-      setAppointments(DUMMY_APPOINTMENTS);
-      setLoading(false);
-    }, 800);
+  const fetchAppointments = useCallback(async () => {
+    setLoading(true);
+    setError('');
 
-    return () => clearTimeout(timer);
+    try {
+      const data = await getAppointments();
+      setAppointments(data);
+    } catch (err) {
+      setError(err.message || 'Failed to load appointments.');
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    fetchAppointments();
+  }, [fetchAppointments]);
 
   const message = location.state?.message;
 
   const handleLogout = () => {
     localStorage.removeItem('token');
     navigate('/login', { replace: true });
+  };
+
+  const handleChange = (event) => {
+    const { name, value } = event.target;
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    setError('');
+
+    const patientName = formData.patientName.trim();
+    const doctorName = formData.doctorName.trim();
+    const { date } = formData;
+
+    if (!patientName || !doctorName || !date) {
+      setError('Patient name, doctor name, and date are required.');
+      return;
+    }
+
+    try {
+      setIsSubmitting(true);
+      await createAppointment({ patientName, doctorName, date });
+      setFormData(initialFormState);
+      await fetchAppointments();
+    } catch (err) {
+      setError(err.message || 'Failed to create appointment.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleComplete = async (appointmentId) => {
+    setError('');
+
+    try {
+      setUpdatingId(appointmentId);
+      const updated = await updateAppointmentStatus(
+        appointmentId,
+        'completed'
+      );
+      setAppointments((prev) =>
+        prev.map((appointment) =>
+          appointment._id === updated._id ? updated : appointment
+        )
+      );
+    } catch (err) {
+      setError(err.message || 'Failed to update appointment.');
+    } finally {
+      setUpdatingId(null);
+    }
   };
 
   return (
@@ -47,10 +129,61 @@ function Dashboard() {
           <h1>Welcome, User</h1>
           <p className="dashboard-subtitle">Here are your upcoming appointments.</p>
           {message ? <p className="status-message success">{message}</p> : null}
+          {error ? <p className="status-message error">{error}</p> : null}
         </div>
         <button type="button" className="btn btn-secondary" onClick={handleLogout}>
           Log out
         </button>
+      </div>
+
+      <div className="card appointment-form-card">
+        <h2>Book Appointment</h2>
+        <form className="appointment-form" onSubmit={handleSubmit}>
+          <div className="form-field">
+            <label htmlFor="patientName">Patient Name</label>
+            <input
+              id="patientName"
+              name="patientName"
+              type="text"
+              placeholder="John Doe"
+              value={formData.patientName}
+              onChange={handleChange}
+              required
+            />
+          </div>
+          <div className="form-field">
+            <label htmlFor="doctorName">Doctor Name</label>
+            <input
+              id="doctorName"
+              name="doctorName"
+              type="text"
+              placeholder="Dr. Smith"
+              value={formData.doctorName}
+              onChange={handleChange}
+              required
+            />
+          </div>
+          <div className="form-field">
+            <label htmlFor="date">Date</label>
+            <input
+              id="date"
+              name="date"
+              type="date"
+              value={formData.date}
+              onChange={handleChange}
+              required
+            />
+          </div>
+          <div className="appointment-form-actions">
+            <button
+              type="submit"
+              className="btn btn-primary"
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? 'Saving...' : 'Book Appointment'}
+            </button>
+          </div>
+        </form>
       </div>
 
       <div className="appointments-section">
@@ -59,15 +192,17 @@ function Dashboard() {
         {loading ? (
           <LoadingPlaceholder count={3} />
         ) : appointments.length === 0 ? (
-          <p className="no-appointments">No appointments found.</p>
+          <p className="no-appointments">No appointments yet.</p>
         ) : (
           <div className="appointments-list">
             {appointments.map((apt) => (
               <AppointmentCard
-                key={apt.id}
-                doctor={apt.doctor}
-                date={apt.date}
+                key={apt._id}
+                doctor={apt.doctorName}
+                date={formatDate(apt.date)}
                 status={apt.status}
+                onComplete={() => handleComplete(apt._id)}
+                isUpdating={updatingId === apt._id}
               />
             ))}
           </div>
