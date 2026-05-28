@@ -1,0 +1,9 @@
+.loading-placeholder {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.skeleton-card {
+  padding: 20px;
+}

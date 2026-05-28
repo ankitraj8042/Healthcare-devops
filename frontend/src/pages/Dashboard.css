@@ -1,0 +1,32 @@
+.dashboard-page {
+  padding: 40px 20px;
+}
+
+.dashboard-page h1 {
+  font-size: 1.8rem;
+  color: #1f2937;
+  margin-bottom: 6px;
+}
+
+.dashboard-subtitle {
+  color: #6b7280;
+  margin-bottom: 32px;
+}
+
+.appointments-section h2 {
+  font-size: 1.2rem;
+  color: #374151;
+  margin-bottom: 16px;
+}
+
+.appointments-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.no-appointments {
+  color: #9ca3af;
+  text-align: center;
+  padding: 40px 0;
+}
