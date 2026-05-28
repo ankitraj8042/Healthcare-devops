@@ -2,7 +2,8 @@
 
 ## Overview
 Simple healthcare appointment booking app with authentication and basic
-appointment management.
+appointment management. Backend is Node.js + Express + MongoDB, frontend is
+React + Vite.
 
 ## Features
 - User signup and login with JWT.
@@ -18,6 +19,10 @@ appointment management.
 ## Project structure
 - backend/ contains the Express API.
 - frontend/ contains the React app.
+
+## Requirements
+- Node.js 18+
+- MongoDB (local or Atlas)
 
 ## Setup
 
