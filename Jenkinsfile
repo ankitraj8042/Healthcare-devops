@@ -128,11 +128,16 @@ pipeline {
                                 echo ">> Pulling latest backend image..."
                                 docker pull ${BACKEND_IMAGE}:latest
 
-                                echo ">> Stopping old containers..."
-                                cd /home/ubuntu
-                                docker compose down --remove-orphans || true
+                                echo ">> Stopping ALL old containers..."
+                                docker stop $(docker ps -aq) 2>/dev/null || true
+                                docker rm $(docker ps -aq) 2>/dev/null || true
+
+                                echo ">> Cleaning up old compose projects..."
+                                cd /home/ubuntu/Healthcare-devops/Healthcare-devops && docker compose down --remove-orphans 2>/dev/null || true
+                                cd /home/ubuntu && docker compose down --remove-orphans 2>/dev/null || true
 
                                 echo ">> Starting updated containers..."
+                                cd /home/ubuntu
                                 docker compose up -d
 
                                 echo ">> Waiting for containers to start..."
