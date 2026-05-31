@@ -1,21 +1,111 @@
-- name: Deploy healthcare app with Docker Compose
+---
+- name: Deploy Healthcare App to AWS EC2
   hosts: web
   become: true
   vars:
-    app_dir: /home/ubuntu/Healthcare-devops/Healthcare-devops
-  tasks:
-    - name: Pull latest images
-      ansible.builtin.command: docker compose pull
-      args:
-        chdir: "{{ app_dir }}"
+    dockerhub_user: "ankit86"
+    image_tag: "latest"
+    app_dir: "/home/ubuntu/healthcare-app"
+    frontend_image: "{{ dockerhub_user }}/healthcare-frontend:{{ image_tag }}"
+    backend_image: "{{ dockerhub_user }}/healthcare-backend:{{ image_tag }}"
 
+  tasks:
+
+    # ── Ensure Docker is installed and running ──
+    - name: Ensure Docker is installed
+      ansible.builtin.apt:
+        name:
+          - docker.io
+          - docker-compose-plugin
+        state: present
+        update_cache: true
+
+    - name: Ensure Docker service is running
+      ansible.builtin.service:
+        name: docker
+        state: started
+        enabled: true
+
+    - name: Add ubuntu user to docker group
+      ansible.builtin.user:
+        name: ubuntu
+        groups: docker
+        append: true
+
+    # ── Create application directory ──
+    - name: Create application directory
+      ansible.builtin.file:
+        path: "{{ app_dir }}"
+        state: directory
+        owner: ubuntu
+        group: ubuntu
+        mode: '0755'
+
+    # ── Copy docker-compose file to EC2 ──
+    - name: Copy docker-compose.yml to server
+      ansible.builtin.copy:
+        src: "{{ playbook_dir }}/../docker-compose.yml"
+        dest: "{{ app_dir }}/docker-compose.yml"
+        owner: ubuntu
+        group: ubuntu
+        mode: '0644'
+
+    # ── Pull latest Docker images from Docker Hub ──
+    - name: Pull latest frontend image
+      ansible.builtin.command: "docker pull {{ frontend_image }}"
+      changed_when: true
+
+    - name: Pull latest backend image
+      ansible.builtin.command: "docker pull {{ backend_image }}"
+      changed_when: true
+
+    # ── Stop old containers ──
     - name: Stop existing containers
-      ansible.builtin.command: docker compose down
+      ansible.builtin.command: docker compose down --remove-orphans
       args:
         chdir: "{{ app_dir }}"
       ignore_errors: true
 
-    - name: Start containers
+    # ── Start updated containers ──
+    - name: Start containers with updated images
       ansible.builtin.command: docker compose up -d
       args:
         chdir: "{{ app_dir }}"
+
+    # ── Wait for containers to stabilize ──
+    - name: Wait for containers to start
+      ansible.builtin.pause:
+        seconds: 10
+
+    # ── Verify containers are running ──
+    - name: Verify running containers
+      ansible.builtin.command: docker ps --format "table {{'{{'}}.Names{{'}}'}}\t{{'{{'}}.Status{{'}}'}}\t{{'{{'}}.Ports{{'}}'}}"
+      register: container_status
+      changed_when: false
+
+    - name: Display container status
+      ansible.builtin.debug:
+        msg: "{{ container_status.stdout_lines }}"
+
+    - name: Check that frontend container is running
+      ansible.builtin.shell: docker ps --filter "ancestor={{ frontend_image }}" --format "{{'{{'}}.Names{{'}}'}}" | head -1
+      register: frontend_check
+      changed_when: false
+      failed_when: frontend_check.stdout == ""
+
+    - name: Check that backend container is running
+      ansible.builtin.shell: docker ps --filter "ancestor={{ backend_image }}" --format "{{'{{'}}.Names{{'}}'}}" | head -1
+      register: backend_check
+      changed_when: false
+      failed_when: backend_check.stdout == ""
+
+    - name: Deployment verification summary
+      ansible.builtin.debug:
+        msg:
+          - "============================================"
+          - "  ✅ DEPLOYMENT SUCCESSFUL"
+          - "  Frontend: {{ frontend_image }}"
+          - "  Backend:  {{ backend_image }}"
+          - "  App URL:  http://{{ inventory_hostname }}:3000"
+          - "  API URL:  http://{{ inventory_hostname }}:5000"
+          - "============================================"

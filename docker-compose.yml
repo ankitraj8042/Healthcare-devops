@@ -1,13 +1,18 @@
 services:
   mongo:
     image: mongo:6
+    container_name: healthcare-mongo
     expose:
       - "27017"
+    volumes:
+      - mongo-data:/data/db
     networks:
       - appnet
+    restart: unless-stopped
 
   backend:
-    build: ./backend
+    image: ankit86/healthcare-backend:latest
+    container_name: healthcare-backend
     ports:
       - "5000:5000"
     environment:
@@ -16,16 +21,22 @@ services:
       - mongo
     networks:
       - appnet
+    restart: unless-stopped
 
   frontend:
-    build: ./frontend
+    image: ankit86/healthcare-frontend:latest
+    container_name: healthcare-frontend
     ports:
       - "3000:3000"
     depends_on:
       - backend
     networks:
       - appnet
+    restart: unless-stopped
 
 networks:
   appnet:
     driver: bridge
+
+volumes:
+  mongo-data:
