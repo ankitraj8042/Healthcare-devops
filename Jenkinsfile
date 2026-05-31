@@ -106,7 +106,7 @@ pipeline {
                 echo '  STAGE 6: Deploying to AWS EC2 via Ansible'
                 echo '=========================================='
                 withCredentials([sshUserPrivateKey(
-                    credentialsId: 'ec2-ssh-key',
+                    credentialsId: 'aws-ec2-key',
                     keyFileVariable: 'SSH_KEY_FILE',
                     usernameVariable: 'SSH_USER'
                 )]) {
