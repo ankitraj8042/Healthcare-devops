@@ -1,4 +1,6 @@
 services:
+
+  # ── Healthcare Application ─────────────────────
   mongo:
     image: mongo:6
     container_name: healthcare-mongo
@@ -34,9 +36,87 @@ services:
       - appnet
     restart: unless-stopped
 
+  # ── Monitoring Stack ───────────────────────────
+
+  # Prometheus — Metrics collection engine
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: healthcare-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.retention.time=7d'
+    depends_on:
+      - cadvisor
+      - node-exporter
+    networks:
+      - appnet
+    restart: unless-stopped
+
+  # Grafana — Monitoring dashboard UI
+  grafana:
+    image: grafana/grafana:latest
+    container_name: healthcare-grafana
+    ports:
+      - "3001:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
+    depends_on:
+      - prometheus
+    networks:
+      - appnet
+    restart: unless-stopped
+
+  # Node Exporter — Host system metrics (INTERNAL ONLY)
+  node-exporter:
+    image: prom/node-exporter:latest
+    container_name: healthcare-node-exporter
+    expose:
+      - "9100"
+    command:
+      - '--path.rootfs=/host'
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/host:ro,rslave
+    networks:
+      - appnet
+    restart: unless-stopped
+
+  # cAdvisor — Container metrics (INTERNAL ONLY)
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:latest
+    container_name: healthcare-cadvisor
+    expose:
+      - "8080"
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+      - /dev/disk/:/dev/disk:ro
+    privileged: true
+    devices:
+      - /dev/kmsg
+    networks:
+      - appnet
+    restart: unless-stopped
+
 networks:
   appnet:
     driver: bridge
 
 volumes:
   mongo-data:
+  prometheus-data:
+  grafana-data:

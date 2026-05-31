@@ -1,228 +1,159 @@
-# Healthcare DevOps — Deployment Workflow
+# Healthcare DevOps — Deployment Workflow Documentation
 
-## Overview
-
-This document describes the complete CI/CD pipeline that automates the deployment of the Healthcare application from a developer's code push to a live update on AWS EC2.
-
----
-
-## Architecture Diagram
+## Architecture Overview
 
 ```
-┌──────────────┐     Webhook     ┌──────────────┐     Push      ┌──────────────┐
-│              │ ──────────────► │              │ ────────────► │              │
-│    GitHub    │                 │   Jenkins    │               │  Docker Hub  │
-│              │ ◄────── Pull    │              │               │              │
-└──────────────┘                 └──────┬───────┘               └──────┬───────┘
-                                       │                               │
-                                       │ Ansible Playbook              │ Pull Images
-                                       ▼                               │
-                                ┌──────────────┐                       │
-                                │              │ ◄─────────────────────┘
-                                │   AWS EC2    │
-                                │   (Ubuntu)   │
-                                │              │
-                                └──────────────┘
+Developer Push → GitHub → Webhook → Jenkins (Local Docker)
                                        │
-                                       ▼
-                                 🌐 Live Website
-                            http://<EC2-IP>:3000
+                   ┌───────────────────┘
+                   ▼
+         ┌─────────────────┐
+         │   JENKINS CI/CD  │
+         │                   │
+         │ Stage 1: Checkout │
+         │ Stage 2: Build FE │
+         │ Stage 3: Build BE │
+         │ Stage 4: Push FE  │
+         │ Stage 5: Push BE  │
+         │ Stage 6: Ansible  │
+         │ Stage 7: Verify   │
+         └────────┬──────────┘
+                  │
+                  ▼ Ansible Playbook (SSH)
+         ┌──────────────────────────────────────────────┐
+         │              AWS EC2 (Ubuntu)                 │
+         │                                               │
+         │  ┌─────────────┐  ┌─────────────┐            │
+         │  │  Frontend   │  │   Backend   │            │
+         │  │  :3000      │  │   :5000     │            │
+         │  └─────────────┘  └─────────────┘            │
+         │  ┌─────────────┐  ┌─────────────┐            │
+         │  │   MongoDB   │  │  Prometheus │            │
+         │  │  :27017     │  │   :9090     │            │
+         │  └─────────────┘  └─────────────┘            │
+         │  ┌─────────────┐  ┌─────────────┐            │
+         │  │   Grafana   │  │  cAdvisor   │            │
+         │  │   :3001     │  │  (internal) │            │
+         │  └─────────────┘  └─────────────┘            │
+         │  ┌──────────────┐                             │
+         │  │Node Exporter │                             │
+         │  │  (internal)  │                             │
+         │  └──────────────┘                             │
+         └──────────────────────────────────────────────┘
 ```
 
----
+## Pipeline Stages
 
-## Pipeline Stages (Step-by-Step)
+| Stage | Name             | Description                                       |
+|-------|------------------|---------------------------------------------------|
+| 1     | Checkout Code    | Clone `main` branch from GitHub                   |
+| 2     | Build Frontend   | Build Docker image `ankit86/healthcare-frontend`   |
+| 3     | Build Backend    | Build Docker image `ankit86/healthcare-backend`    |
+| 4     | Push Frontend    | Push `build-N` + `latest` tags to Docker Hub      |
+| 5     | Push Backend     | Push `build-N` + `latest` tags to Docker Hub      |
+| 6     | Ansible Deploy   | Run Ansible playbook to deploy to EC2             |
+| 7     | Verify Deploy    | SSH health checks for all services                |
 
-### 1️⃣ Developer Pushes Code to GitHub
+## Image Versioning
 
-- Developer commits and pushes code to the `main` branch.
-- GitHub repository: `https://github.com/ankitraj8042/Healthcare-devops.git`
+Every build creates **two tags**:
+- `ankit86/healthcare-frontend:build-14` (traceable)
+- `ankit86/healthcare-frontend:latest` (for compose)
 
-### 2️⃣ GitHub Webhook Triggers Jenkins
-
-- A webhook configured on GitHub sends a POST request to the Jenkins server.
-- Jenkins is listening at: `http://<Jenkins-IP>:8080/github-webhook/`
-- Jenkins receives the webhook and starts the pipeline.
-
-### 3️⃣ Jenkins Pulls Latest Code (Stage 1: Checkout)
-
-- Jenkins clones the repository from the `main` branch.
-- All source code (frontend, backend, Dockerfiles, ansible configs) is available to the build.
-
-### 4️⃣ Jenkins Builds Frontend Docker Image (Stage 2)
-
-- Builds the React (Vite) frontend from `./frontend/Dockerfile`.
-- Tags the image as:
-  - `ankit86/healthcare-frontend:<build-number>`
-  - `ankit86/healthcare-frontend:latest`
-
-### 5️⃣ Jenkins Builds Backend Docker Image (Stage 3)
-
-- Builds the Node.js + Express backend from `./backend/Dockerfile`.
-- Tags the image as:
-  - `ankit86/healthcare-backend:<build-number>`
-  - `ankit86/healthcare-backend:latest`
-
-### 6️⃣ Jenkins Pushes Frontend Image to Docker Hub (Stage 4)
-
-- Authenticates with Docker Hub using Jenkins stored credentials (`dockerhub-creds`).
-- Pushes both tagged and latest frontend images.
-
-### 7️⃣ Jenkins Pushes Backend Image to Docker Hub (Stage 5)
-
-- Pushes both tagged and latest backend images.
-- Docker Hub repositories:
-  - `ankit86/healthcare-frontend`
-  - `ankit86/healthcare-backend`
-
-### 8️⃣ Jenkins Runs Ansible Playbook (Stage 6)
-
-- Ansible connects to the AWS EC2 instance via SSH.
-- Uses the SSH key stored in Jenkins credentials (`ec2-ssh-key`).
-- Runs `ansible/deploy.yml` against the inventory.
-
-### 9️⃣ Ansible Deploys to EC2
-
-The Ansible playbook performs the following on the EC2 server:
-
-1. **Ensures Docker is installed** and running on the server.
-2. **Copies** the `docker-compose.yml` file to the server.
-3. **Pulls** the latest frontend and backend images from Docker Hub.
-4. **Stops** old containers (`docker compose down`).
-5. **Starts** updated containers (`docker compose up -d`).
-6. **Verifies** all containers are running correctly.
-
-### 🔟 Website Updated Live
-
-- The application is now running with the latest code.
-- **Frontend**: `http://<EC2-IP>:3000`
-- **Backend API**: `http://<EC2-IP>:5000`
-
----
-
-## Files Overview
-
-| File | Purpose |
-|------|---------|
-| `Jenkinsfile` | Defines the 6-stage CI/CD pipeline |
-| `docker-compose.yml` | Defines the multi-container application (uses Docker Hub images) |
-| `ansible/inventory.ini` | Lists the target EC2 server for Ansible |
-| `ansible/deploy.yml` | Ansible playbook that deploys to EC2 |
-| `ansible.cfg` | Global Ansible configuration |
-| `frontend/Dockerfile` | Builds the React frontend image |
-| `backend/Dockerfile` | Builds the Node.js backend image |
-
----
-
-## Directory Structure
-
-```
-Healthcare-devops/
-├── Jenkinsfile                  # CI/CD pipeline definition
-├── docker-compose.yml           # Docker Compose (uses Docker Hub images)
-├── ansible.cfg                  # Ansible global config
-├── ansible/
-│   ├── inventory.ini            # Target EC2 server
-│   └── deploy.yml               # Deployment playbook
-├── docs/
-│   └── deployment-workflow.md   # This document
-├── backend/
-│   ├── Dockerfile               # Backend Docker image
-│   ├── package.json
-│   └── src/                     # Express API source code
-└── frontend/
-    ├── Dockerfile               # Frontend Docker image
-    ├── package.json
-    └── src/                     # React source code
+### Rollback Command
+```bash
+# Roll back to a specific build
+docker pull ankit86/healthcare-frontend:build-12
+docker pull ankit86/healthcare-backend:build-12
+docker tag ankit86/healthcare-frontend:build-12 ankit86/healthcare-frontend:latest
+docker tag ankit86/healthcare-backend:build-12 ankit86/healthcare-backend:latest
+docker compose up -d
 ```
 
----
+## Ansible Deployment
 
-## Jenkins Credentials Required
+### What Ansible Does (10 Steps):
+1. **Docker Hub Login** — Authenticate for image pulls
+2. **Pull Images** — Download latest frontend & backend
+3. **Copy Configs** — docker-compose.yml + monitoring configs to EC2
+4. **Stop Containers** — Graceful shutdown of all running containers
+5. **Start Containers** — `docker compose up -d` (app + monitoring)
+6. **Wait** — 15 seconds for services to stabilize
+7. **Health Checks** — Verify frontend, backend, Grafana, Prometheus
+8. **Image Cleanup** — `docker image prune -f` to free disk space
+9. **Docker Logout** — Secure credential cleanup
+10. **Summary** — Display deployment report with URLs
 
-The following credentials must be configured in **Jenkins → Manage Jenkins → Credentials**:
+### Why Ansible Instead of SSH Scripts?
+- **Idempotent** — Safe to run multiple times
+- **Declarative** — Describes desired state, not steps
+- **Modular** — Each task is independent and testable
+- **Error Handling** — Built-in retries and failure management
+- **Industry Standard** — Used by DevOps teams worldwide
 
-### 1. Docker Hub Credentials (`dockerhub-creds`)
+## Monitoring Stack
 
-| Field | Value |
-|-------|-------|
-| **Type** | Username with password |
-| **ID** | `dockerhub-creds` |
-| **Username** | `ankit86` |
-| **Password** | Docker Hub Access Token |
-| **Description** | Docker Hub login for pushing images |
+### Components
 
-### 2. EC2 SSH Key (`ec2-ssh-key`)
+| Service        | Port   | Access   | Purpose                       |
+|----------------|--------|----------|-------------------------------|
+| Grafana        | 3001   | Public   | Dashboard UI for all metrics  |
+| Prometheus     | 9090   | Public   | Metrics collection engine     |
+| Node Exporter  | 9100   | Internal | Host CPU/Memory/Disk metrics  |
+| cAdvisor       | 8080   | Internal | Container resource metrics    |
 
-| Field | Value |
-|-------|-------|
-| **Type** | SSH Username with private key |
-| **ID** | `ec2-ssh-key` |
-| **Username** | `ubuntu` |
-| **Private Key** | Paste contents of `healthcare-key.pem` |
-| **Description** | SSH key to access AWS EC2 server |
+### Grafana Dashboard
+- **URL:** `http://<EC2-IP>:3001`
+- **Login:** admin / admin
+- **Auto-configured:** Dashboard loads automatically on first boot
+- **Panels:**
+  - Host CPU Usage (Gauge)
+  - Host Memory Usage (Gauge)
+  - Running Container Count (Stat)
+  - Host Disk Usage (Gauge)
+  - Container CPU Usage (Time Series)
+  - Container Memory Usage (Time Series)
+  - Container Network RX (Time Series)
+  - Container Network TX (Time Series)
 
----
+### Prometheus Targets
+- `prometheus:9090` — Self-monitoring
+- `node-exporter:9100` — Host metrics
+- `cadvisor:8080` — Container metrics
 
-## GitHub Webhook Setup
+## Tools Used
 
-1. Go to your GitHub repo → **Settings** → **Webhooks** → **Add webhook**.
-2. Configure:
+| Tool           | Purpose                          |
+|----------------|----------------------------------|
+| GitHub         | Source code repository           |
+| Jenkins        | CI/CD pipeline orchestration     |
+| Docker         | Containerization                 |
+| Docker Hub     | Image registry                   |
+| Docker Compose | Multi-container orchestration    |
+| Ansible        | Automated deployment             |
+| Prometheus     | Metrics collection               |
+| Grafana        | Monitoring dashboards            |
+| Node Exporter  | Host system metrics              |
+| cAdvisor       | Container metrics                |
+| AWS EC2        | Cloud hosting                    |
+| ngrok          | Webhook tunnel (local Jenkins)   |
 
-| Field | Value |
-|-------|-------|
-| **Payload URL** | `http://<Jenkins-IP>:8080/github-webhook/` |
-| **Content type** | `application/json` |
-| **Secret** | (leave blank or set a secret) |
-| **Events** | Just the push event |
-| **Active** | ✅ Checked |
+## Viva Q&A
 
----
+**Q: What happens when you push code?**
+A: GitHub webhook triggers Jenkins → builds Docker images → pushes to Docker Hub → runs Ansible playbook → Ansible deploys to EC2 → health checks verify everything → application is live.
 
-## Environment Variables
+**Q: Why use Ansible instead of shell scripts?**
+A: Ansible is idempotent (safe to re-run), declarative, has built-in error handling, and is an industry-standard tool for infrastructure automation.
 
-### Jenkins Pipeline
+**Q: How does monitoring work?**
+A: Node Exporter collects host metrics, cAdvisor collects container metrics, Prometheus scrapes both every 15 seconds, and Grafana visualizes everything in a pre-built dashboard.
 
-| Variable | Description |
-|----------|-------------|
-| `DOCKERHUB_USER` | Docker Hub username (`ankit86`) |
-| `FRONTEND_IMAGE` | Full frontend image name |
-| `BACKEND_IMAGE` | Full backend image name |
-| `IMAGE_TAG` | Build number used as image tag |
+**Q: How would you rollback a bad deployment?**
+A: Every build is tagged with `build-N`. Run `docker pull <image>:build-<previous_number>`, tag it as `latest`, and run `docker compose up -d`.
 
-### Docker Compose (EC2)
+**Q: Why are Node Exporter and cAdvisor internal-only?**
+A: They expose sensitive server metrics. Prometheus scrapes them internally via Docker networking. Only Grafana (the dashboard) is exposed publicly.
 
-| Variable | Description |
-|----------|-------------|
-| `MONGO_URI` | MongoDB connection string (set in container env) |
-
----
-
-## Troubleshooting
-
-### Jenkins pipeline fails at "Push Images"
-- Verify `dockerhub-creds` credential is configured correctly.
-- Ensure the Docker Hub access token has read/write permissions.
-
-### Ansible fails to connect to EC2
-- Check that the EC2 security group allows SSH (port 22) from Jenkins IP.
-- Verify the `ec2-ssh-key` credential has the correct PEM key.
-- Confirm the EC2 instance is running and the IP is current.
-
-### Containers not starting on EC2
-- SSH into EC2 and check logs: `docker compose logs`
-- Verify Docker is installed: `docker --version`
-- Check disk space: `df -h`
-
-### Website not accessible
-- Ensure EC2 security group allows inbound traffic on ports 3000 and 5000.
-- Check that containers are running: `docker ps`
-
----
-
-## Security Notes
-
-- ⚠️ **Never** commit Docker Hub tokens or SSH keys to GitHub.
-- ✅ Always use Jenkins Credentials Manager for secrets.
-- ✅ Use Docker Hub access tokens instead of passwords.
-- ✅ Restrict EC2 security group rules to necessary IPs/ports only.
+**Q: What health checks are performed?**
+A: Ansible verifies HTTP 200 from Frontend (port 3000), Backend (port 5000), Grafana (port 3001), and Prometheus (port 9090) with retries before marking deployment as successful.

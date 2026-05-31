@@ -5,7 +5,7 @@ pipeline {
         DOCKERHUB_USER   = 'ankit86'
         FRONTEND_IMAGE   = "${DOCKERHUB_USER}/healthcare-frontend"
         BACKEND_IMAGE    = "${DOCKERHUB_USER}/healthcare-backend"
-        IMAGE_TAG        = "${BUILD_NUMBER}"
+        IMAGE_TAG        = "build-${BUILD_NUMBER}"
     }
 
     triggers {
@@ -102,12 +102,12 @@ pipeline {
         }
 
         // ──────────────────────────────────────────────
-        // Stage 6: Deploy to AWS EC2 via SSH
+        // Stage 6: Deploy to AWS EC2 via Ansible
         // ──────────────────────────────────────────────
-        stage('Deploy to EC2') {
+        stage('Ansible Deploy') {
             steps {
                 echo '=========================================='
-                echo '  STAGE 6: Deploying to AWS EC2 via SSH'
+                echo '  STAGE 6: Deploying to AWS EC2 via Ansible'
                 echo '=========================================='
                 withCredentials([usernamePassword(
                     credentialsId: 'dockerhub-creds',
@@ -115,48 +115,44 @@ pipeline {
                     passwordVariable: 'DOCKER_PASS'
                 )]) {
                     sshagent(['aws-ec2-key']) {
-                        sh """
-                            echo '>> Copying docker-compose.yml to EC2...'
-                            scp -o StrictHostKeyChecking=no docker-compose.yml ubuntu@13.233.124.85:/home/ubuntu/docker-compose.yml
-
-                            echo '>> Deploying on EC2...'
-                            ssh -o StrictHostKeyChecking=no ubuntu@13.233.124.85 '
-                                set -e
-
-                                echo ">> Logging into Docker Hub..."
-                                echo "${DOCKER_PASS}" | docker login -u "${DOCKER_USER}" --password-stdin
-
-                                echo ">> Pulling latest frontend image..."
-                                docker pull ${FRONTEND_IMAGE}:latest
-
-                                echo ">> Pulling latest backend image..."
-                                docker pull ${BACKEND_IMAGE}:latest
-
-                                echo ">> Stopping ALL old containers..."
-                                docker stop \$(docker ps -aq) 2>/dev/null || true
-                                docker rm \$(docker ps -aq) 2>/dev/null || true
-
-                                echo ">> Cleaning up old compose projects..."
-                                cd /home/ubuntu/Healthcare-devops/Healthcare-devops && docker compose down --remove-orphans 2>/dev/null || true
-                                cd /home/ubuntu && docker compose down --remove-orphans 2>/dev/null || true
-
-                                echo ">> Starting updated containers..."
-                                cd /home/ubuntu
-                                docker compose up -d
-
-                                echo ">> Waiting for containers to start..."
-                                sleep 10
-
-                                echo ">> Verifying containers are running..."
-                                docker ps --format "table {{.Names}}\\t{{.Status}}\\t{{.Ports}}"
-
-                                echo ">> Docker logout..."
-                                docker logout
-                            '
-                        """
+                        sh '''
+                            export ANSIBLE_HOST_KEY_CHECKING=False
+                            export ANSIBLE_CONFIG=ansible/ansible.cfg
+                            ansible-playbook -i ansible/inventory.ini ansible/deploy.yml \
+                                -e "dockerhub_token=$DOCKER_PASS" \
+                                -e "dockerhub_user=$DOCKER_USER"
+                        '''
                     }
                 }
-                echo "✅ Deployment to EC2 complete!"
+                echo "✅ Ansible deployment complete!"
+            }
+        }
+
+        // ──────────────────────────────────────────────
+        // Stage 7: Verify Deployment
+        // ──────────────────────────────────────────────
+        stage('Verify Deployment') {
+            steps {
+                echo '=========================================='
+                echo '  STAGE 7: Verifying Deployment'
+                echo '=========================================='
+                sshagent(['aws-ec2-key']) {
+                    sh '''
+                        echo ">> Checking running containers..."
+                        ssh -o StrictHostKeyChecking=no ubuntu@13.233.124.85 'docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"'
+
+                        echo ""
+                        echo ">> Checking Healthcare Frontend..."
+                        ssh -o StrictHostKeyChecking=no ubuntu@13.233.124.85 'curl -sf -o /dev/null -w "Frontend: HTTP %{http_code}\n" http://localhost:3000'
+
+                        echo ">> Checking Grafana..."
+                        ssh -o StrictHostKeyChecking=no ubuntu@13.233.124.85 'curl -sf -o /dev/null -w "Grafana:  HTTP %{http_code}\n" http://localhost:3001/api/health'
+
+                        echo ">> Checking Prometheus..."
+                        ssh -o StrictHostKeyChecking=no ubuntu@13.233.124.85 'curl -sf -o /dev/null -w "Prometheus: HTTP %{http_code}\n" http://localhost:9090/-/healthy'
+                    '''
+                }
+                echo "✅ All services verified and running!"
             }
         }
     }
@@ -164,25 +160,30 @@ pipeline {
     post {
         success {
             echo ''
-            echo '╔══════════════════════════════════════════╗'
-            echo '║   🎉 PIPELINE COMPLETED SUCCESSFULLY!   ║'
-            echo '║                                          ║'
-            echo '║   Images pushed to Docker Hub            ║'
-            echo '║   Application deployed to AWS EC2        ║'
-            echo '║   Website is live and updated!           ║'
-            echo '╚══════════════════════════════════════════╝'
+            echo '╔══════════════════════════════════════════════╗'
+            echo '║   🎉 PIPELINE COMPLETED SUCCESSFULLY!       ║'
+            echo '║                                              ║'
+            echo '║   ✅ Images pushed to Docker Hub             ║'
+            echo '║   ✅ Ansible deployed to AWS EC2             ║'
+            echo '║   ✅ Monitoring stack active                 ║'
+            echo '║   ✅ Health checks passed                    ║'
+            echo '╚══════════════════════════════════════════════╝'
             echo ''
         }
         failure {
             echo ''
-            echo '╔══════════════════════════════════════════╗'
-            echo '║   ❌ PIPELINE FAILED!                    ║'
-            echo '║   Check the logs above for errors.       ║'
-            echo '╚══════════════════════════════════════════╝'
+            echo '╔══════════════════════════════════════════════╗'
+            echo '║   ❌ PIPELINE FAILED!                        ║'
+            echo '║   Check the logs above for errors.           ║'
+            echo '║                                              ║'
+            echo '║   Rollback: docker pull ankit86/healthcare-  ║'
+            echo '║   frontend:build-<PREV_BUILD_NUMBER>         ║'
+            echo '╚══════════════════════════════════════════════╝'
             echo ''
         }
         always {
             echo "Build Number: ${BUILD_NUMBER}"
+            echo "Image Tag:    ${IMAGE_TAG}"
             echo "Build URL:    ${BUILD_URL}"
             sh 'docker logout || true'
         }

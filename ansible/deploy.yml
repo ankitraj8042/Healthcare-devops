@@ -1,48 +1,65 @@
 ---
-- name: Deploy Healthcare App to AWS EC2
+# ================================================================
+# Healthcare DevOps — Ansible Deployment Playbook
+# ================================================================
+# This playbook deploys the Healthcare application and monitoring
+# stack to AWS EC2. It handles:
+#   - Docker Hub authentication
+#   - Image pulling with versioned tags
+#   - Container lifecycle management
+#   - Monitoring stack deployment
+#   - Health checks for all services
+#   - Old image cleanup
+# ================================================================
+
+- name: Deploy Healthcare Application to AWS EC2
   hosts: web
   become: true
+
   vars:
     dockerhub_user: "ankit86"
     image_tag: "latest"
-    app_dir: "/home/ubuntu/healthcare-app"
-    frontend_image: "{{ dockerhub_user }}/healthcare-frontend:{{ image_tag }}"
-    backend_image: "{{ dockerhub_user }}/healthcare-backend:{{ image_tag }}"
+    app_dir: "/home/ubuntu"
+    frontend_image: "{{ dockerhub_user }}/healthcare-frontend"
+    backend_image: "{{ dockerhub_user }}/healthcare-backend"
 
   tasks:
 
-    # ── Ensure Docker is installed and running ──
-    - name: Ensure Docker is installed
-      ansible.builtin.apt:
-        name:
-          - docker.io
-          - docker-compose-plugin
-        state: present
-        update_cache: true
+    # ── Step 1: Docker Hub Authentication ──────────────────
+    - name: Log into Docker Hub
+      ansible.builtin.command: >
+        docker login -u {{ dockerhub_user }} -p {{ dockerhub_token }}
+      no_log: true
+      when: dockerhub_token is defined
 
-    - name: Ensure Docker service is running
-      ansible.builtin.service:
-        name: docker
-        state: started
-        enabled: true
+    # ── Step 2: Pull Latest Docker Images ──────────────────
+    - name: Pull latest frontend image
+      ansible.builtin.command: "docker pull {{ frontend_image }}:latest"
+      register: frontend_pull
+      changed_when: "'Downloaded newer' in frontend_pull.stdout"
 
-    - name: Add ubuntu user to docker group
-      ansible.builtin.user:
-        name: ubuntu
-        groups: docker
-        append: true
+    - name: Pull latest backend image
+      ansible.builtin.command: "docker pull {{ backend_image }}:latest"
+      register: backend_pull
+      changed_when: "'Downloaded newer' in backend_pull.stdout"
 
-    # ── Create application directory ──
-    - name: Create application directory
+    # ── Step 3: Copy Configuration Files ───────────────────
+    - name: Create monitoring directories
       ansible.builtin.file:
-        path: "{{ app_dir }}"
+        path: "{{ item }}"
         state: directory
         owner: ubuntu
         group: ubuntu
         mode: '0755'
+      loop:
+        - "{{ app_dir }}/monitoring"
+        - "{{ app_dir }}/monitoring/grafana"
+        - "{{ app_dir }}/monitoring/grafana/provisioning"
+        - "{{ app_dir }}/monitoring/grafana/provisioning/datasources"
+        - "{{ app_dir }}/monitoring/grafana/provisioning/dashboards"
+        - "{{ app_dir }}/monitoring/grafana/dashboards"
 
-    # ── Copy docker-compose file to EC2 ──
-    - name: Copy docker-compose.yml to server
+    - name: Copy docker-compose.yml
       ansible.builtin.copy:
         src: "{{ playbook_dir }}/../docker-compose.yml"
         dest: "{{ app_dir }}/docker-compose.yml"
@@ -50,36 +67,61 @@
         group: ubuntu
         mode: '0644'
 
-    # ── Pull latest Docker images from Docker Hub ──
-    - name: Pull latest frontend image
-      ansible.builtin.command: "docker pull {{ frontend_image }}"
-      changed_when: true
+    - name: Copy Prometheus configuration
+      ansible.builtin.copy:
+        src: "{{ playbook_dir }}/../monitoring/prometheus.yml"
+        dest: "{{ app_dir }}/monitoring/prometheus.yml"
+        owner: ubuntu
+        group: ubuntu
+        mode: '0644'
 
-    - name: Pull latest backend image
-      ansible.builtin.command: "docker pull {{ backend_image }}"
-      changed_when: true
+    - name: Copy Grafana datasource config
+      ansible.builtin.copy:
+        src: "{{ playbook_dir }}/../monitoring/grafana/provisioning/datasources/datasource.yml"
+        dest: "{{ app_dir }}/monitoring/grafana/provisioning/datasources/datasource.yml"
+        owner: ubuntu
+        group: ubuntu
+        mode: '0644'
 
-    # ── Stop old containers ──
-    - name: Stop existing containers
-      ansible.builtin.command: docker compose down --remove-orphans
-      args:
-        chdir: "{{ app_dir }}"
+    - name: Copy Grafana dashboard provisioner
+      ansible.builtin.copy:
+        src: "{{ playbook_dir }}/../monitoring/grafana/provisioning/dashboards/dashboard.yml"
+        dest: "{{ app_dir }}/monitoring/grafana/provisioning/dashboards/dashboard.yml"
+        owner: ubuntu
+        group: ubuntu
+        mode: '0644'
+
+    - name: Copy Grafana dashboard JSON
+      ansible.builtin.copy:
+        src: "{{ playbook_dir }}/../monitoring/grafana/dashboards/healthcare-dashboard.json"
+        dest: "{{ app_dir }}/monitoring/grafana/dashboards/healthcare-dashboard.json"
+        owner: ubuntu
+        group: ubuntu
+        mode: '0644'
+
+    # ── Step 4: Stop All Existing Containers ───────────────
+    - name: Stop all running containers
+      ansible.builtin.shell: docker stop $(docker ps -aq) 2>/dev/null || true
       ignore_errors: true
 
-    # ── Start updated containers ──
-    - name: Start containers with updated images
+    - name: Remove all stopped containers
+      ansible.builtin.shell: docker rm $(docker ps -aq) 2>/dev/null || true
+      ignore_errors: true
+
+    # ── Step 5: Start All Containers ───────────────────────
+    - name: Start application and monitoring stack
       ansible.builtin.command: docker compose up -d
       args:
         chdir: "{{ app_dir }}"
 
-    # ── Wait for containers to stabilize ──
-    - name: Wait for containers to start
+    # ── Step 6: Wait for Services to Start ─────────────────
+    - name: Wait for containers to stabilize
       ansible.builtin.pause:
-        seconds: 10
+        seconds: 15
 
-    # ── Verify containers are running ──
-    - name: Verify running containers
-      ansible.builtin.command: docker ps --format "table {{'{{'}}.Names{{'}}'}}\t{{'{{'}}.Status{{'}}'}}\t{{'{{'}}.Ports{{'}}'}}"
+    # ── Step 7: Health Checks ──────────────────────────────
+    - name: Verify all containers are running
+      ansible.builtin.command: docker ps --format "table {{'{{'}}.Names{{'}}'}}  {{'{{'}}.Status{{'}}'}}  {{'{{'}}.Ports{{'}}'}}"
       register: container_status
       changed_when: false
 
@@ -87,25 +129,79 @@
       ansible.builtin.debug:
         msg: "{{ container_status.stdout_lines }}"
 
-    - name: Check that frontend container is running
-      ansible.builtin.shell: docker ps --filter "ancestor={{ frontend_image }}" --format "{{'{{'}}.Names{{'}}'}}" | head -1
-      register: frontend_check
-      changed_when: false
-      failed_when: frontend_check.stdout == ""
+    - name: Health check — Frontend (port 3000)
+      ansible.builtin.uri:
+        url: "http://localhost:3000"
+        method: GET
+        status_code: 200
+        timeout: 10
+      register: frontend_health
+      retries: 3
+      delay: 5
+      until: frontend_health.status == 200
 
-    - name: Check that backend container is running
-      ansible.builtin.shell: docker ps --filter "ancestor={{ backend_image }}" --format "{{'{{'}}.Names{{'}}'}}" | head -1
-      register: backend_check
-      changed_when: false
-      failed_when: backend_check.stdout == ""
+    - name: Health check — Backend (port 5000)
+      ansible.builtin.uri:
+        url: "http://localhost:5000"
+        method: GET
+        status_code: [200, 404]
+        timeout: 10
+      register: backend_health
+      retries: 3
+      delay: 5
+      until: backend_health.status is defined
 
+    - name: Health check — Grafana (port 3001)
+      ansible.builtin.uri:
+        url: "http://localhost:3001/api/health"
+        method: GET
+        status_code: 200
+        timeout: 10
+      register: grafana_health
+      retries: 5
+      delay: 5
+      until: grafana_health.status == 200
+
+    - name: Health check — Prometheus (port 9090)
+      ansible.builtin.uri:
+        url: "http://localhost:9090/-/healthy"
+        method: GET
+        status_code: 200
+        timeout: 10
+      register: prometheus_health
+      retries: 3
+      delay: 5
+      until: prometheus_health.status == 200
+
+    # ── Step 8: Cleanup Old Images ─────────────────────────
+    - name: Remove unused Docker images to free space
+      ansible.builtin.command: docker image prune -f
+      register: prune_result
+      changed_when: "'Total reclaimed space' in prune_result.stdout"
+
+    - name: Display cleanup result
+      ansible.builtin.debug:
+        msg: "{{ prune_result.stdout }}"
+
+    # ── Step 9: Docker Logout ──────────────────────────────
+    - name: Log out of Docker Hub
+      ansible.builtin.command: docker logout
+      ignore_errors: true
+
+    # ── Step 10: Deployment Summary ────────────────────────
     - name: Deployment verification summary
       ansible.builtin.debug:
         msg:
-          - "============================================"
-          - "  ✅ DEPLOYMENT SUCCESSFUL"
-          - "  Frontend: {{ frontend_image }}"
-          - "  Backend:  {{ backend_image }}"
-          - "  App URL:  http://{{ inventory_hostname }}:3000"
-          - "  API URL:  http://{{ inventory_hostname }}:5000"
-          - "============================================"
+          - "╔══════════════════════════════════════════════╗"
+          - "║   ✅ DEPLOYMENT SUCCESSFUL                   ║"
+          - "╠══════════════════════════════════════════════╣"
+          - "║   Frontend : http://{{ inventory_hostname }}:3000  ║"
+          - "║   Backend  : http://{{ inventory_hostname }}:5000  ║"
+          - "║   Grafana  : http://{{ inventory_hostname }}:3001  ║"
+          - "║   Prometheus: http://{{ inventory_hostname }}:9090 ║"
+          - "╠══════════════════════════════════════════════╣"
+          - "║   Rollback Command:                          ║"
+          - "║   docker pull {{ frontend_image }}:build-NN  ║"
+          - "║   docker pull {{ backend_image }}:build-NN   ║"
+          - "║   docker compose up -d                       ║"
+          - "╚══════════════════════════════════════════════╝"
