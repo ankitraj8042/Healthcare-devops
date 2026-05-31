@@ -98,26 +98,54 @@ pipeline {
         }
 
         // ──────────────────────────────────────────────
-        // Stage 6: Deploy to AWS EC2 via Ansible
+        // Stage 6: Deploy to AWS EC2 via SSH
         // ──────────────────────────────────────────────
-        stage('Deploy with Ansible') {
+        stage('Deploy to EC2') {
             steps {
                 echo '=========================================='
-                echo '  STAGE 6: Deploying to AWS EC2 via Ansible'
+                echo '  STAGE 6: Deploying to AWS EC2 via SSH'
                 echo '=========================================='
-                withCredentials([sshUserPrivateKey(
-                    credentialsId: 'aws-ec2-key',
-                    keyFileVariable: 'SSH_KEY_FILE',
-                    usernameVariable: 'SSH_USER'
+                withCredentials([usernamePassword(
+                    credentialsId: 'dockerhub-creds',
+                    usernameVariable: 'DOCKER_USER',
+                    passwordVariable: 'DOCKER_PASS'
                 )]) {
-                    sh """
-                        export ANSIBLE_HOST_KEY_CHECKING=False
-                        ansible-playbook -i ansible/inventory.ini ansible/deploy.yml \
-                            --private-key=\$SSH_KEY_FILE \
-                            -e "ansible_user=ubuntu" \
-                            -e "dockerhub_user=${DOCKERHUB_USER}" \
-                            -e "image_tag=${IMAGE_TAG}"
-                    """
+                    sshagent(['aws-ec2-key']) {
+                        sh """
+                            echo '>> Copying docker-compose.yml to EC2...'
+                            scp -o StrictHostKeyChecking=no docker-compose.yml ubuntu@13.233.124.85:/home/ubuntu/docker-compose.yml
+
+                            echo '>> Deploying on EC2...'
+                            ssh -o StrictHostKeyChecking=no ubuntu@13.233.124.85 '
+                                set -e
+
+                                echo ">> Logging into Docker Hub..."
+                                echo "${DOCKER_PASS}" | docker login -u "${DOCKER_USER}" --password-stdin
+
+                                echo ">> Pulling latest frontend image..."
+                                docker pull ${FRONTEND_IMAGE}:latest
+
+                                echo ">> Pulling latest backend image..."
+                                docker pull ${BACKEND_IMAGE}:latest
+
+                                echo ">> Stopping old containers..."
+                                cd /home/ubuntu
+                                docker compose down --remove-orphans || true
+
+                                echo ">> Starting updated containers..."
+                                docker compose up -d
+
+                                echo ">> Waiting for containers to start..."
+                                sleep 10
+
+                                echo ">> Verifying containers are running..."
+                                docker ps --format "table {{.Names}}\\t{{.Status}}\\t{{.Ports}}"
+
+                                echo ">> Docker logout..."
+                                docker logout
+                            '
+                        """
+                    }
                 }
                 echo "✅ Deployment to EC2 complete!"
             }
