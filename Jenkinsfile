@@ -1,37 +1,59 @@
 pipeline {
-  agent any
+agent any
 
-  options {
-    skipDefaultCheckout(true)
-  }
+```
+environment {
+    DOCKERHUB_USER = "ankit86"
+}
 
-  stages {
+stages {
+
     stage('Clone Repository') {
-      steps {
-        echo 'Cloning repository'
-        git branch: 'feature/devops-core', url: 'https://github.com/ankitraj8042/Healthcare-devops.git'
-      }
+        steps {
+            git branch: 'feature/devops-core',
+                url: 'https://github.com/ankitraj8042/Healthcare-devops.git'
+        }
     }
 
-    stage('Build Docker Images') {
-      steps {
-        echo 'Building Docker images'
-        sh 'docker compose build'
-      }
+    stage('Build Images') {
+        steps {
+            sh 'docker compose build'
+        }
     }
 
-    stage('Stop Existing Containers') {
-      steps {
-        echo 'Stopping existing containers'
-        sh 'docker compose down || true'
-      }
+    stage('Docker Hub Login') {
+        steps {
+            withCredentials([usernamePassword(
+                credentialsId: 'dockerhub-creds',
+                usernameVariable: 'DOCKER_USER',
+                passwordVariable: 'DOCKER_PASS'
+            )]) {
+
+                sh '''
+                echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
+                '''
+            }
+        }
     }
 
-    stage('Start Containers') {
-      steps {
-        echo 'Starting containers'
-        sh 'docker compose up -d'
-      }
+    stage('Tag Images') {
+        steps {
+            sh '''
+            docker tag healthcare-devops-backend:latest ankit86/healthcare-backend:latest
+            docker tag healthcare-devops-frontend:latest ankit86/healthcare-frontend:latest
+            '''
+        }
     }
-  }
+
+    stage('Push Images') {
+        steps {
+            sh '''
+            docker push ankit86/healthcare-backend:latest
+            docker push ankit86/healthcare-frontend:latest
+            '''
+        }
+    }
+}
+```
+
 }
