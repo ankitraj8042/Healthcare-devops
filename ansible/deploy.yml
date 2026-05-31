@@ -131,45 +131,45 @@
 
     - name: Health check — Frontend (port 3000)
       ansible.builtin.uri:
-        url: "http://localhost:3000"
+        url: "http://127.0.0.1:3000"
         method: GET
         status_code: 200
         timeout: 10
       register: frontend_health
-      retries: 3
+      retries: 10
       delay: 5
       until: frontend_health.status == 200
 
     - name: Health check — Backend (port 5000)
       ansible.builtin.uri:
-        url: "http://localhost:5000"
+        url: "http://127.0.0.1:5000"
         method: GET
         status_code: [200, 404]
         timeout: 10
       register: backend_health
-      retries: 3
+      retries: 10
       delay: 5
       until: backend_health.status is defined
 
     - name: Health check — Grafana (port 3001)
       ansible.builtin.uri:
-        url: "http://localhost:3001/api/health"
+        url: "http://127.0.0.1:3001/api/health"
         method: GET
         status_code: 200
         timeout: 10
       register: grafana_health
-      retries: 5
+      retries: 10
       delay: 5
       until: grafana_health.status == 200
 
     - name: Health check — Prometheus (port 9090)
       ansible.builtin.uri:
-        url: "http://localhost:9090/-/healthy"
+        url: "http://127.0.0.1:9090/-/healthy"
         method: GET
         status_code: 200
         timeout: 10
       register: prometheus_health
-      retries: 3
+      retries: 10
       delay: 5
       until: prometheus_health.status == 200
 
