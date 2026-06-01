@@ -7,7 +7,7 @@ const STATS = [
   { value: 500, suffix: '+', labelKey: 'home.stat1' },
   { value: 10000, suffix: '+', labelKey: 'home.stat2' },
   { value: 98, suffix: '%', labelKey: 'home.stat3' },
-  { value: 200, suffix: '+', labelKey: 'home.stat4' },
+  { value: 250, suffix: '+', labelKey: 'home.stat4' },
 ];
 
 const FEATURES = [
