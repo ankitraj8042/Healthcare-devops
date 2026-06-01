@@ -127,13 +127,42 @@ function Dashboard() {
       <div className="dashboard-header">
         <div>
           <h1>Welcome, User</h1>
-          <p className="dashboard-subtitle">Here are your upcoming appointments.</p>
+          <p className="dashboard-subtitle">Manage your appointments and health schedule.</p>
           {message ? <p className="status-message success">{message}</p> : null}
           {error ? <p className="status-message error">{error}</p> : null}
         </div>
         <button type="button" className="btn btn-secondary" onClick={handleLogout}>
           Log out
         </button>
+      </div>
+
+      {/* Stats Row */}
+      <div className="dashboard-stats">
+        <div className="card stat-card">
+          <div className="stat-card-icon">📊</div>
+          <div>
+            <div className="stat-card-value">{appointments.length}</div>
+            <div className="stat-card-label">Total Appointments</div>
+          </div>
+        </div>
+        <div className="card stat-card">
+          <div className="stat-card-icon pending">⏳</div>
+          <div>
+            <div className="stat-card-value">
+              {appointments.filter((a) => a.status === 'pending').length}
+            </div>
+            <div className="stat-card-label">Pending</div>
+          </div>
+        </div>
+        <div className="card stat-card">
+          <div className="stat-card-icon completed">✅</div>
+          <div>
+            <div className="stat-card-value">
+              {appointments.filter((a) => a.status === 'completed').length}
+            </div>
+            <div className="stat-card-label">Completed</div>
+          </div>
+        </div>
       </div>
 
       <div className="card appointment-form-card">
@@ -180,7 +209,7 @@ function Dashboard() {
               className="btn btn-primary"
               disabled={isSubmitting}
             >
-              {isSubmitting ? 'Saving...' : 'Book Appointment'}
+              {isSubmitting ? 'Saving...' : 'Book'}
             </button>
           </div>
         </form>
@@ -192,7 +221,10 @@ function Dashboard() {
         {loading ? (
           <LoadingPlaceholder count={3} />
         ) : appointments.length === 0 ? (
-          <p className="no-appointments">No appointments yet.</p>
+          <p className="no-appointments">
+            <span className="no-appointments-icon">📅</span>
+            No appointments yet. Book your first one above!
+          </p>
         ) : (
           <div className="appointments-list">
             {appointments.map((apt) => (

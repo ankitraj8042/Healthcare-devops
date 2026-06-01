@@ -54,7 +54,8 @@ function Login() {
   return (
     <div className="container auth-page">
       <div className="card auth-card">
-        <h2>Login</h2>
+        <h2>Welcome Back</h2>
+        <p className="auth-welcome">Sign in to your account to continue</p>
         <form onSubmit={handleSubmit}>
           <div className="form-group">
             <label htmlFor="email">Email</label>

@@ -1,5 +1,5 @@
 .dashboard-page {
-  padding: 40px 20px;
+  padding: 40px 24px 60px;
 }
 
 .dashboard-header {
@@ -13,80 +13,141 @@
 
 .dashboard-page h1 {
   font-size: 1.8rem;
-  color: #1f2937;
+  font-weight: 800;
+  color: var(--gray-900);
   margin-bottom: 6px;
 }
 
 .dashboard-subtitle {
-  color: #6b7280;
+  color: var(--gray-500);
+  margin-bottom: 24px;
+  font-size: 0.95rem;
+}
+
+/* ===== Summary Stats ===== */
+.dashboard-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 16px;
   margin-bottom: 32px;
 }
 
+.stat-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 20px;
+}
+
+.stat-card-icon {
+  font-size: 1.6rem;
+  padding: 10px;
+  background: var(--primary-50);
+  border-radius: var(--radius-md);
+  flex-shrink: 0;
+}
+
+.stat-card-icon.pending {
+  background: var(--warning-bg);
+}
+
+.stat-card-icon.completed {
+  background: var(--success-bg);
+}
+
+.stat-card-value {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--gray-900);
+  line-height: 1.2;
+}
+
+.stat-card-label {
+  font-size: 0.82rem;
+  color: var(--gray-500);
+  font-weight: 500;
+}
+
+/* ===== Status Messages ===== */
 .status-message {
   margin-top: 12px;
-  padding: 10px 12px;
-  border-radius: 6px;
+  padding: 12px 14px;
+  border-radius: var(--radius-md);
   font-size: 0.9rem;
   display: inline-block;
+  font-weight: 500;
 }
 
 .status-message.success {
-  background: #dcfce7;
-  color: #166534;
+  background: var(--success-bg);
+  color: var(--success-text);
 }
 
 .status-message.error {
-  background: #fee2e2;
-  color: #991b1b;
+  background: var(--danger-bg);
+  color: var(--danger-text);
 }
 
+/* ===== Appointment Form ===== */
 .appointment-form-card {
-  margin: 24px 0 32px;
+  margin: 0 0 32px;
 }
 
 .appointment-form-card h2 {
   font-size: 1.2rem;
-  color: #374151;
-  margin-bottom: 16px;
+  font-weight: 700;
+  color: var(--gray-800);
+  margin-bottom: 18px;
 }
 
 .appointment-form {
   display: grid;
+  grid-template-columns: 1fr 1fr 1fr auto;
   gap: 16px;
+  align-items: end;
 }
 
 .form-field label {
   display: block;
-  font-size: 0.9rem;
-  font-weight: 500;
-  color: #374151;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--gray-700);
   margin-bottom: 6px;
 }
 
 .form-field input {
   width: 100%;
-  padding: 10px 12px;
-  border: 1px solid #d1d5db;
-  border-radius: 6px;
+  padding: 12px 14px;
+  border: 2px solid var(--gray-200);
+  border-radius: var(--radius-md);
   font-size: 0.95rem;
-  color: #1f2937;
-  background: #f9fafb;
+  font-family: inherit;
+  color: var(--gray-800);
+  background: var(--gray-50);
+  transition: all var(--transition-fast);
 }
 
 .form-field input:focus {
   outline: none;
-  border-color: #2563eb;
-  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.15);
+  border-color: var(--primary-400);
+  background: #fff;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 
 .appointment-form-actions {
   display: flex;
-  justify-content: flex-end;
+  align-items: end;
+}
+
+/* ===== Appointments List ===== */
+.appointments-section {
+  margin-top: 8px;
 }
 
 .appointments-section h2 {
   font-size: 1.2rem;
-  color: #374151;
+  font-weight: 700;
+  color: var(--gray-800);
   margin-bottom: 16px;
 }
 
@@ -97,7 +158,31 @@
 }
 
 .no-appointments {
-  color: #9ca3af;
+  color: var(--gray-400);
   text-align: center;
-  padding: 40px 0;
+  padding: 50px 0;
+  font-size: 1rem;
+}
+
+.no-appointments-icon {
+  display: block;
+  font-size: 3rem;
+  margin-bottom: 12px;
+}
+
+/* ===== Responsive ===== */
+@media (max-width: 768px) {
+  .appointment-form {
+    grid-template-columns: 1fr;
+  }
+
+  .dashboard-stats {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .dashboard-stats {
+    grid-template-columns: 1fr;
+  }
 }

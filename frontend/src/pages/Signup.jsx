@@ -55,7 +55,8 @@ function Signup() {
   return (
     <div className="container auth-page">
       <div className="card auth-card">
-        <h2>Sign Up</h2>
+        <h2>Create Account</h2>
+        <p className="auth-welcome">Join thousands of patients on HealthHub</p>
         <form onSubmit={handleSubmit}>
           <div className="form-group">
             <label htmlFor="name">Full Name</label>
