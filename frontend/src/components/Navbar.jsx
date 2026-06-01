@@ -10,7 +10,7 @@ function Navbar() {
     <nav className="navbar">
       <div className="container navbar-content">
         <Link to="/" className="navbar-brand">
-          🏥 Healthcare System
+          🏥 Healthcare System <span className="navbar-version">v2.0</span>
         </Link>
         <ul className="navbar-links">
           <li>

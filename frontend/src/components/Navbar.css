@@ -1,10 +1,11 @@
 .navbar {
-  background-color: #fff;
-  border-bottom: 1px solid #e5e7eb;
+  background: linear-gradient(135deg, #eff6ff 0%, #ffffff 100%);
+  border-bottom: 1px solid #dbeafe;
   padding: 14px 0;
   position: sticky;
   top: 0;
   z-index: 100;
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.08);
 }
 
 .navbar-content {
@@ -17,6 +18,18 @@
   font-size: 1.25rem;
   font-weight: 700;
   color: #2563eb;
+}
+
+.navbar-version {
+  font-size: 0.65rem;
+  font-weight: 600;
+  background: linear-gradient(135deg, #2563eb, #7c3aed);
+  color: #fff;
+  padding: 2px 8px;
+  border-radius: 12px;
+  vertical-align: middle;
+  margin-left: 6px;
+  letter-spacing: 0.5px;
 }
 
 .navbar-links {
