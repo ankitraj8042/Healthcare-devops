@@ -5,28 +5,28 @@ function Home() {
   return (
     <div className="container home-page">
       <div className="hero">
-        <h1>Welcome to Healthcare System</h1>
+        <h1>Your Health, Our Priority</h1>
         <p className="hero-description">
-          Book appointments with trusted doctors quickly and easily.
-          Manage your health records and stay on top of your medical schedule.
+          Schedule appointments with top-rated physicians in seconds.
+          Stay informed with real-time health insights and never miss a check-up again.
         </p>
         <Link to="/dashboard" className="btn btn-primary">
-          Book Appointment
+          Get Started
         </Link>
       </div>
 
       <div className="features">
         <div className="card feature-card">
-          <h3>🩺 Find Doctors</h3>
-          <p>Browse through our list of qualified healthcare professionals.</p>
+          <h3>🩺 Expert Physicians</h3>
+          <p>Connect with board-certified doctors across 20+ specialties.</p>
         </div>
         <div className="card feature-card">
-          <h3>📅 Easy Scheduling</h3>
-          <p>Pick a date and time that works best for you.</p>
+          <h3>📅 Instant Booking</h3>
+          <p>Choose a convenient slot and confirm your visit in one tap.</p>
         </div>
         <div className="card feature-card">
-          <h3>📋 Track Records</h3>
-          <p>View your appointment history and upcoming visits.</p>
+          <h3>📋 Health Dashboard</h3>
+          <p>Monitor appointments, prescriptions, and medical history in one place.</p>
         </div>
       </div>
     </div>
