@@ -1,40 +1,22 @@
 import { useState } from 'react';
+import { useLanguage } from '../context/LanguageContext';
+import ClinicMap from '../components/ClinicMap';
 import './Contact.css';
 
-const CONTACT_INFO = [
-  { icon: '📍', title: 'Visit Us', detail: '123 Medical Center Dr, Suite 400\nNew York, NY 10001' },
-  { icon: '📞', title: 'Call Us', detail: '(555) 123-4567\nMon–Sat: 8AM–8PM' },
-  { icon: '✉️', title: 'Email Us', detail: 'support@healthhub.com\nWe reply within 24 hours' },
-  { icon: '💬', title: 'Live Chat', detail: 'Available 24/7\nAverage response: 2 min' },
-];
-
-const FAQS = [
-  {
-    q: 'How do I book an appointment?',
-    a: 'Simply create an account, browse our doctors directory, and click "Book Appointment" on any available doctor. You can also book directly from your dashboard.',
-  },
-  {
-    q: 'Can I cancel or reschedule my appointment?',
-    a: 'Yes, you can manage your appointments from your dashboard. Cancellations and reschedules are free up to 24 hours before your appointment.',
-  },
-  {
-    q: 'Is my medical data secure?',
-    a: 'Absolutely. We use enterprise-grade encryption and comply with HIPAA regulations to ensure your medical data is always protected.',
-  },
-  {
-    q: 'Do you accept insurance?',
-    a: 'We work with most major insurance providers. You can verify your coverage during the booking process or contact our support team for assistance.',
-  },
-  {
-    q: 'How do I contact my doctor after a visit?',
-    a: 'After your appointment, you can send follow-up messages through your dashboard. Your doctor will respond within 1-2 business days.',
-  },
-];
-
 function Contact() {
+  const { t } = useLanguage();
   const [formData, setFormData] = useState({ name: '', email: '', message: '' });
   const [submitted, setSubmitted] = useState(false);
   const [openFaq, setOpenFaq] = useState(null);
+
+  const CONTACT_INFO = [
+    { icon: '📍', titleKey: 'contact.visitUs', detail: 'Connaught Place, New Delhi\n110001, India' },
+    { icon: '📞', titleKey: 'contact.callUs', detail: '+91 11-2345-6789\nMon–Sat: 9AM–8PM IST' },
+    { icon: '✉️', titleKey: 'contact.emailUs', detail: 'support@healthhub.in\n24 hrs response time' },
+    { icon: '💬', titleKey: 'contact.liveChat', detail: '24/7 Available\nAvg response: 2 min' },
+  ];
+
+  const FAQ_KEYS = [1, 2, 3, 4, 5];
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -48,119 +30,78 @@ function Contact() {
     setTimeout(() => setSubmitted(false), 4000);
   };
 
-  const toggleFaq = (index) => {
-    setOpenFaq(openFaq === index ? null : index);
-  };
+  const toggleFaq = (index) => setOpenFaq(openFaq === index ? null : index);
 
   return (
     <div className="contact-page">
-      {/* Header */}
       <section className="contact-hero">
         <div className="container">
-          <span className="section-label">Get in Touch</span>
-          <h1 className="section-title">We're Here to Help</h1>
-          <p className="section-subtitle">
-            Have a question or need assistance? Reach out to our support team — we'd love to hear from you.
-          </p>
+          <span className="section-label">{t('contact.label')}</span>
+          <h1 className="section-title">{t('contact.title')}</h1>
+          <p className="section-subtitle">{t('contact.subtitle')}</p>
         </div>
       </section>
 
       <div className="container contact-content">
-        {/* Contact Info Cards */}
         <div className="contact-info-grid">
           {CONTACT_INFO.map((item) => (
-            <div key={item.title} className="card contact-info-card">
+            <div key={item.titleKey} className="card contact-info-card">
               <div className="contact-info-icon">{item.icon}</div>
-              <h3 className="contact-info-title">{item.title}</h3>
+              <h3 className="contact-info-title">{t(item.titleKey)}</h3>
               <p className="contact-info-detail">
                 {item.detail.split('\n').map((line, i) => (
-                  <span key={i}>
-                    {line}
-                    {i === 0 && <br />}
-                  </span>
+                  <span key={i}>{line}{i === 0 && <br />}</span>
                 ))}
               </p>
             </div>
           ))}
         </div>
 
-        {/* Form + FAQ */}
         <div className="contact-body">
-          {/* Contact Form */}
           <div className="card contact-form-card">
-            <h2 className="contact-form-title">Send Us a Message</h2>
+            <h2 className="contact-form-title">{t('contact.formTitle')}</h2>
             {submitted && (
-              <div className="toast-success animate-fade-in">
-                ✅ Thank you! Your message has been sent successfully.
-              </div>
+              <div className="toast-success animate-fade-in">{t('contact.formSuccess')}</div>
             )}
             <form className="contact-form" onSubmit={handleSubmit}>
               <div className="form-field">
-                <label htmlFor="contact-name">Your Name</label>
-                <input
-                  id="contact-name"
-                  name="name"
-                  type="text"
-                  placeholder="John Doe"
-                  value={formData.name}
-                  onChange={handleChange}
-                  required
-                />
+                <label htmlFor="contact-name">{t('contact.yourName')}</label>
+                <input id="contact-name" name="name" type="text" placeholder="Rahul Sharma" value={formData.name} onChange={handleChange} required />
               </div>
               <div className="form-field">
-                <label htmlFor="contact-email">Your Email</label>
-                <input
-                  id="contact-email"
-                  name="email"
-                  type="email"
-                  placeholder="you@example.com"
-                  value={formData.email}
-                  onChange={handleChange}
-                  required
-                />
+                <label htmlFor="contact-email">{t('contact.yourEmail')}</label>
+                <input id="contact-email" name="email" type="email" placeholder="you@example.com" value={formData.email} onChange={handleChange} required />
               </div>
               <div className="form-field">
-                <label htmlFor="contact-message">Message</label>
-                <textarea
-                  id="contact-message"
-                  name="message"
-                  placeholder="How can we help you?"
-                  rows={5}
-                  value={formData.message}
-                  onChange={handleChange}
-                  required
-                />
+                <label htmlFor="contact-message">{t('contact.message')}</label>
+                <textarea id="contact-message" name="message" placeholder={t('contact.messagePlaceholder')} rows={5} value={formData.message} onChange={handleChange} required />
               </div>
-              <button type="submit" className="btn btn-primary">
-                Send Message
-              </button>
+              <button type="submit" className="btn btn-primary">{t('contact.send')}</button>
             </form>
           </div>
 
-          {/* FAQ Section */}
           <div className="faq-section">
-            <h2 className="faq-title">Frequently Asked Questions</h2>
+            <h2 className="faq-title">{t('contact.faqTitle')}</h2>
             <div className="faq-list">
-              {FAQS.map((faq, index) => (
-                <div
-                  key={index}
-                  className={`faq-item ${openFaq === index ? 'open' : ''}`}
-                >
-                  <button
-                    type="button"
-                    className="faq-question"
-                    onClick={() => toggleFaq(index)}
-                  >
-                    <span>{faq.q}</span>
+              {FAQ_KEYS.map((num) => (
+                <div key={num} className={`faq-item ${openFaq === num ? 'open' : ''}`}>
+                  <button type="button" className="faq-question" onClick={() => toggleFaq(num)}>
+                    <span>{t(`contact.faq${num}q`)}</span>
                     <span className="faq-chevron">›</span>
                   </button>
                   <div className="faq-answer">
-                    <p>{faq.a}</p>
+                    <p>{t(`contact.faq${num}a`)}</p>
                   </div>
                 </div>
               ))}
             </div>
           </div>
+        </div>
+
+        {/* Clinic Map */}
+        <div className="map-section">
+          <h2 className="section-title" style={{ textAlign: 'center', marginTop: '40px' }}>{t('contact.mapTitle')}</h2>
+          <ClinicMap />
         </div>
       </div>
     </div>

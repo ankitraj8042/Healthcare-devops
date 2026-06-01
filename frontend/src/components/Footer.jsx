@@ -1,7 +1,9 @@
 import { Link } from 'react-router-dom';
+import { useLanguage } from '../context/LanguageContext';
 import './Footer.css';
 
 function Footer() {
+  const { t } = useLanguage();
   const currentYear = new Date().getFullYear();
 
   return (
@@ -10,48 +12,45 @@ function Footer() {
         <div className="footer-grid">
           <div className="footer-brand">
             <h3 className="footer-logo">🏥 HealthHub</h3>
-            <p className="footer-tagline">
-              Connecting patients with top-rated physicians.
-              Quality healthcare made simple and accessible.
-            </p>
+            <p className="footer-tagline">{t('footer.tagline')}</p>
           </div>
 
           <div className="footer-column">
-            <h4 className="footer-heading">Quick Links</h4>
+            <h4 className="footer-heading">{t('footer.quickLinks')}</h4>
             <ul className="footer-links">
-              <li><Link to="/">Home</Link></li>
-              <li><Link to="/doctors">Find Doctors</Link></li>
-              <li><Link to="/dashboard">Appointments</Link></li>
-              <li><Link to="/contact">Contact</Link></li>
+              <li><Link to="/">{t('nav.home')}</Link></li>
+              <li><Link to="/doctors">{t('nav.doctors')}</Link></li>
+              <li><Link to="/dashboard">{t('nav.dashboard')}</Link></li>
+              <li><Link to="/contact">{t('nav.contact')}</Link></li>
             </ul>
           </div>
 
           <div className="footer-column">
-            <h4 className="footer-heading">Services</h4>
+            <h4 className="footer-heading">{t('footer.services')}</h4>
             <ul className="footer-links">
-              <li><span>General Checkup</span></li>
+              <li><span>General Medicine</span></li>
               <li><span>Cardiology</span></li>
-              <li><span>Dermatology</span></li>
-              <li><span>Pediatrics</span></li>
+              <li><span>Ayurveda</span></li>
+              <li><span>Homeopathy</span></li>
             </ul>
           </div>
 
           <div className="footer-column">
-            <h4 className="footer-heading">Contact Us</h4>
+            <h4 className="footer-heading">{t('footer.contactUs')}</h4>
             <ul className="footer-links footer-contact">
-              <li>📍 123 Medical Center Dr.</li>
-              <li>📞 (555) 123-4567</li>
-              <li>✉️ support@healthhub.com</li>
-              <li>🕐 Mon–Sat: 8AM–8PM</li>
+              <li>📍 Connaught Place, New Delhi</li>
+              <li>📞 +91 11-2345-6789</li>
+              <li>✉️ support@healthhub.in</li>
+              <li>🕐 Mon–Sat: 9AM–8PM IST</li>
             </ul>
           </div>
         </div>
 
         <div className="footer-bottom">
-          <p>© {currentYear} HealthHub. All rights reserved.</p>
+          <p>© {currentYear} HealthHub. {t('footer.rights')}</p>
           <div className="footer-bottom-links">
-            <span>Privacy Policy</span>
-            <span>Terms of Service</span>
+            <span>{t('footer.privacy')}</span>
+            <span>{t('footer.terms')}</span>
           </div>
         </div>
       </div>

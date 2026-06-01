@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import AppointmentCard from '../components/AppointmentCard';
 import LoadingPlaceholder from '../components/LoadingPlaceholder';
+import { useLanguage } from '../context/LanguageContext';
 import {
   createAppointment,
   getAppointments,
@@ -30,6 +31,7 @@ const formatDate = (value) => {
 
 function Dashboard() {
   const token = localStorage.getItem('token');
+  const { t } = useLanguage();
   const location = useLocation();
   const navigate = useNavigate();
   const [appointments, setAppointments] = useState([]);
@@ -126,13 +128,13 @@ function Dashboard() {
     <div className="container dashboard-page">
       <div className="dashboard-header">
         <div>
-          <h1>Welcome, User</h1>
-          <p className="dashboard-subtitle">Manage your appointments and health schedule.</p>
+          <h1>{t('dashboard.welcome')}</h1>
+          <p className="dashboard-subtitle">{t('dashboard.subtitle')}</p>
           {message ? <p className="status-message success">{message}</p> : null}
           {error ? <p className="status-message error">{error}</p> : null}
         </div>
         <button type="button" className="btn btn-secondary" onClick={handleLogout}>
-          Log out
+          {t('nav.logout')}
         </button>
       </div>
 
@@ -142,7 +144,7 @@ function Dashboard() {
           <div className="stat-card-icon">📊</div>
           <div>
             <div className="stat-card-value">{appointments.length}</div>
-            <div className="stat-card-label">Total Appointments</div>
+            <div className="stat-card-label">{t('dashboard.totalAppointments')}</div>
           </div>
         </div>
         <div className="card stat-card">
@@ -151,7 +153,7 @@ function Dashboard() {
             <div className="stat-card-value">
               {appointments.filter((a) => a.status === 'pending').length}
             </div>
-            <div className="stat-card-label">Pending</div>
+            <div className="stat-card-label">{t('dashboard.pending')}</div>
           </div>
         </div>
         <div className="card stat-card">
@@ -160,40 +162,40 @@ function Dashboard() {
             <div className="stat-card-value">
               {appointments.filter((a) => a.status === 'completed').length}
             </div>
-            <div className="stat-card-label">Completed</div>
+            <div className="stat-card-label">{t('dashboard.completed')}</div>
           </div>
         </div>
       </div>
 
       <div className="card appointment-form-card">
-        <h2>Book Appointment</h2>
+        <h2>{t('dashboard.bookAppointment')}</h2>
         <form className="appointment-form" onSubmit={handleSubmit}>
           <div className="form-field">
-            <label htmlFor="patientName">Patient Name</label>
+            <label htmlFor="patientName">{t('dashboard.patientName')}</label>
             <input
               id="patientName"
               name="patientName"
               type="text"
-              placeholder="John Doe"
+              placeholder="Rahul Sharma"
               value={formData.patientName}
               onChange={handleChange}
               required
             />
           </div>
           <div className="form-field">
-            <label htmlFor="doctorName">Doctor Name</label>
+            <label htmlFor="doctorName">{t('dashboard.doctorName')}</label>
             <input
               id="doctorName"
               name="doctorName"
               type="text"
-              placeholder="Dr. Smith"
+              placeholder="Dr. Priya Sharma"
               value={formData.doctorName}
               onChange={handleChange}
               required
             />
           </div>
           <div className="form-field">
-            <label htmlFor="date">Date</label>
+            <label htmlFor="date">{t('dashboard.date')}</label>
             <input
               id="date"
               name="date"
@@ -209,21 +211,21 @@ function Dashboard() {
               className="btn btn-primary"
               disabled={isSubmitting}
             >
-              {isSubmitting ? 'Saving...' : 'Book'}
+              {isSubmitting ? t('dashboard.saving') : t('dashboard.book')}
             </button>
           </div>
         </form>
       </div>
 
       <div className="appointments-section">
-        <h2>Your Appointments</h2>
+        <h2>{t('dashboard.yourAppointments')}</h2>
 
         {loading ? (
           <LoadingPlaceholder count={3} />
         ) : appointments.length === 0 ? (
           <p className="no-appointments">
             <span className="no-appointments-icon">📅</span>
-            No appointments yet. Book your first one above!
+            {t('dashboard.noAppointments')}
           </p>
         ) : (
           <div className="appointments-list">

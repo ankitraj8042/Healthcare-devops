@@ -68,6 +68,104 @@
   margin-left: 4px;
 }
 
+/* ===== Navbar Right Controls ===== */
+.navbar-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* ===== Language Selector ===== */
+.lang-selector {
+  position: relative;
+}
+
+.lang-btn {
+  background: none;
+  border: 1.5px solid var(--gray-200);
+  border-radius: var(--radius-full);
+  padding: 6px 12px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  color: var(--gray-700);
+  font-family: inherit;
+  transition: all var(--transition-fast);
+}
+
+.lang-btn:hover {
+  border-color: var(--primary-300);
+  color: var(--primary-600);
+}
+
+.lang-dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  overflow: hidden;
+  z-index: 1100;
+  min-width: 120px;
+}
+
+[data-theme="dark"] .lang-dropdown {
+  background: rgba(30, 41, 59, 0.95);
+  border-color: #334155;
+}
+
+.lang-option {
+  display: block;
+  width: 100%;
+  padding: 10px 16px;
+  font-size: 0.88rem;
+  font-family: inherit;
+  color: var(--gray-700);
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  transition: background var(--transition-fast);
+}
+
+.lang-option:hover {
+  background: var(--primary-50);
+}
+
+.lang-option.active {
+  color: var(--primary-600);
+  font-weight: 600;
+  background: var(--primary-50);
+}
+
+[data-theme="dark"] .lang-option:hover,
+[data-theme="dark"] .lang-option.active {
+  background: rgba(59, 130, 246, 0.15);
+}
+
+/* ===== Theme Toggle ===== */
+.theme-btn {
+  background: none;
+  border: 1.5px solid var(--gray-200);
+  border-radius: 50%;
+  width: 34px;
+  height: 34px;
+  font-size: 1rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--transition-fast);
+}
+
+.theme-btn:hover {
+  border-color: var(--primary-300);
+  background: var(--primary-50);
+}
+
 /* ===== Hamburger ===== */
 .hamburger {
   display: none;

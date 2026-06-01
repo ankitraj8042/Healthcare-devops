@@ -1,11 +1,13 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { loginUser } from '../api';
+import { useLanguage } from '../context/LanguageContext';
 import './Login.css';
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 function Login() {
+  const { t } = useLanguage();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -54,11 +56,11 @@ function Login() {
   return (
     <div className="container auth-page">
       <div className="card auth-card">
-        <h2>Welcome Back</h2>
-        <p className="auth-welcome">Sign in to your account to continue</p>
+        <h2>{t('login.title')}</h2>
+        <p className="auth-welcome">{t('login.subtitle')}</p>
         <form onSubmit={handleSubmit}>
           <div className="form-group">
-            <label htmlFor="email">Email</label>
+            <label htmlFor="email">{t('login.email')}</label>
             <input
               id="email"
               type="email"
@@ -70,7 +72,7 @@ function Login() {
             />
           </div>
           <div className="form-group">
-            <label htmlFor="password">Password</label>
+            <label htmlFor="password">{t('login.password')}</label>
             <input
               id="password"
               type="password"
@@ -86,16 +88,14 @@ function Login() {
             className="btn btn-primary auth-btn"
             disabled={loading}
           >
-            {loading ? 'Signing in...' : 'Login'}
+            {loading ? t('login.submitting') : t('login.submit')}
           </button>
         </form>
         {error ? <p className="auth-message error">{error}</p> : null}
         {success ? <p className="auth-message success">{success}</p> : null}
-        <p className="auth-hint">
-          We only use your email for appointment updates and reminders.
-        </p>
+        <p className="auth-hint">{t('login.hint')}</p>
         <p className="auth-footer">
-          Don't have an account? <Link to="/signup">Sign up</Link>
+          {t('login.noAccount')} <Link to="/signup">{t('login.signupLink')}</Link>
         </p>
       </div>
     </div>

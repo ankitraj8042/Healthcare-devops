@@ -1,11 +1,13 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { signupUser } from '../api';
-import './Login.css'; /* Reuse same auth styles */
+import { useLanguage } from '../context/LanguageContext';
+import './Login.css';
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 function Signup() {
+  const { t } = useLanguage();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -55,15 +57,15 @@ function Signup() {
   return (
     <div className="container auth-page">
       <div className="card auth-card">
-        <h2>Create Account</h2>
-        <p className="auth-welcome">Join thousands of patients on HealthHub</p>
+        <h2>{t('signup.title')}</h2>
+        <p className="auth-welcome">{t('signup.subtitle')}</p>
         <form onSubmit={handleSubmit}>
           <div className="form-group">
-            <label htmlFor="name">Full Name</label>
+            <label htmlFor="name">{t('signup.fullName')}</label>
             <input
               id="name"
               type="text"
-              placeholder="John Doe"
+              placeholder="Rahul Sharma"
               value={name}
               onChange={(e) => setName(e.target.value)}
               autoComplete="name"
@@ -71,7 +73,7 @@ function Signup() {
             />
           </div>
           <div className="form-group">
-            <label htmlFor="signup-email">Email</label>
+            <label htmlFor="signup-email">{t('signup.email')}</label>
             <input
               id="signup-email"
               type="email"
@@ -83,7 +85,7 @@ function Signup() {
             />
           </div>
           <div className="form-group">
-            <label htmlFor="signup-password">Password</label>
+            <label htmlFor="signup-password">{t('signup.password')}</label>
             <input
               id="signup-password"
               type="password"
@@ -99,16 +101,14 @@ function Signup() {
             className="btn btn-primary auth-btn"
             disabled={loading}
           >
-            {loading ? 'Creating account...' : 'Sign Up'}
+            {loading ? t('signup.submitting') : t('signup.submit')}
           </button>
         </form>
         {error ? <p className="auth-message error">{error}</p> : null}
         {success ? <p className="auth-message success">{success}</p> : null}
-        <p className="auth-hint">
-          We only use your email for appointment updates and reminders.
-        </p>
+        <p className="auth-hint">{t('signup.hint')}</p>
         <p className="auth-footer">
-          Already have an account? <Link to="/login">Login</Link>
+          {t('signup.hasAccount')} <Link to="/login">{t('signup.loginLink')}</Link>
         </p>
       </div>
     </div>
