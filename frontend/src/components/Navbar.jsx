@@ -28,7 +28,7 @@ function Navbar() {
     <nav className="navbar">
       <div className="container navbar-content">
         <Link to="/" className="navbar-brand" onClick={closeMenu}>
-          🏥 Devops
+          🏥 HealthHub
         </Link>
 
         <div className="navbar-right">
