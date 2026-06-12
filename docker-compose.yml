@@ -19,7 +19,7 @@ services:
       - "5000:5000"
     environment:
       MONGO_URI: mongodb://mongo:27017/healthcare
-      CORS_ORIGIN: http://13.233.124.85:3000
+      CORS_ORIGIN: http://43.205.206.219:3000
     depends_on:
       - mongo
     networks:

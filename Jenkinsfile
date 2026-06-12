@@ -139,17 +139,17 @@ pipeline {
                 sshagent(['aws-ec2-key']) {
                     sh '''
                         echo ">> Checking running containers..."
-                        ssh -o StrictHostKeyChecking=no ubuntu@13.233.124.85 'docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"'
+                        ssh -o StrictHostKeyChecking=no ubuntu@43.205.206.219 'docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"'
 
                         echo ""
                         echo ">> Checking Healthcare Frontend..."
-                        ssh -o StrictHostKeyChecking=no ubuntu@13.233.124.85 'curl -sf -o /dev/null -w "Frontend: HTTP %{http_code}\n" http://localhost:3000'
+                        ssh -o StrictHostKeyChecking=no ubuntu@43.205.206.219 'curl -sf -o /dev/null -w "Frontend: HTTP %{http_code}\n" http://localhost:3000'
 
                         echo ">> Checking Grafana..."
-                        ssh -o StrictHostKeyChecking=no ubuntu@13.233.124.85 'curl -sf -o /dev/null -w "Grafana:  HTTP %{http_code}\n" http://localhost:3001/api/health'
+                        ssh -o StrictHostKeyChecking=no ubuntu@43.205.206.219 'curl -sf -o /dev/null -w "Grafana:  HTTP %{http_code}\n" http://localhost:3001/api/health'
 
                         echo ">> Checking Prometheus..."
-                        ssh -o StrictHostKeyChecking=no ubuntu@13.233.124.85 'curl -sf -o /dev/null -w "Prometheus: HTTP %{http_code}\n" http://localhost:9090/-/healthy'
+                        ssh -o StrictHostKeyChecking=no ubuntu@43.205.206.219 'curl -sf -o /dev/null -w "Prometheus: HTTP %{http_code}\n" http://localhost:9090/-/healthy'
                     '''
                 }
                 echo "✅ All services verified and running!"
