@@ -1,4 +1,4 @@
-# Healthcare DevOps
+# Healthcare DevOps Project
 
 ## Overview
 Simple healthcare appointment booking app with authentication and basic
